@@ -157,7 +157,9 @@ with open(".\\build.bat", "w+") as f:
     f.write(f"""@echo off
 set CAB_NAME={config['package']}31bf3856ad364e35{config['target_arch']}{config['version']}.cab
 
-set "PATH=%PATH%;C:\Program Files (x86)\Windows Kits\10\Assessment and Deployment Kit\Deployment Tools\amd64"
+set "root=%PROGRAMFILES(X86)%\Windows Kits\10\bin"
+for /f %%a in ('dir /b /o:n "%root%" ^| find "0"') do set "path1=%root%\%%a\x64"
+set "PATH=%PATH%;%path1%"
 
 del /f update.cat 2>NUL
 del /f *.cab 2>NUL
