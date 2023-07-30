@@ -157,8 +157,8 @@ with open(".\\build.bat", "w+") as f:
     f.write(f"""@echo off
 set CAB_NAME={config['package']}31bf3856ad364e35{config['target_arch']}{config['version']}.cab
 
-set "root=%PROGRAMFILES(X86)%\Windows Kits\10\bin"
-for /f %%a in ('dir /b /o:n "%root%" ^| find "0"') do set "path1=%root%\%%a\x64"
+set "root=%PROGRAMFILES(X86)%\\Windows Kits\\10\\bin"
+for /f %%a in ('dir /b /o:n "%root%" ^| find "0"') do set "path1=%root%\\%%a\\x64"
 set "PATH=%PATH%;%path1%"
 
 del /f update.cat 2>NUL
@@ -167,5 +167,5 @@ makecat update.cdf || exit /b 1
 signtool.exe sign /f sxs.pfx /p 1 /fd SHA256 update.cat || exit /b 1
 makecab /d "CabinetName1=%CAB_NAME%" /f files.txt || exit /b 1
 del /f setup.* 2>NUL
-signtool sign /f sxs.pfx /p 1 /fd SHA256 disk1\%CAB_NAME% || exit /b 1
-copy disk1\*.cab . >NUL""")
+signtool sign /f sxs.pfx /p 1 /fd SHA256 disk1\\%CAB_NAME% || exit /b 1
+copy disk1\\*.cab . >NUL""")
