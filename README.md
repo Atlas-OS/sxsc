@@ -11,6 +11,7 @@ Credit goes to [@echnobas](https://github.com/echnobas) for this project. GNU Ge
   - They are included [by default](https://github.com/actions/runner-images/blob/main/images/win/Windows2022-Readme.md#installed-windows-sdks) in the `windows-latest` GitHub Action runner
   - Changed in the Python script to match that
   - Removed binaries:  `makecab, makecat, signtool`
+- Add `requirements.txt`
 
 ### References from original project
 Anomalous Software Deterioration Corporation, awuctl, whatever127, asdcorp, may5062, stolenbytes, other anonymous people
