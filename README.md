@@ -1,19 +1,16 @@
 # sxsc
-the sxs compiler (pronounced sxs-see)
+A fork of [`echnobas`/sxsc](https://github.com/echnobas/sxsc) ('the SxS compiler') for use in automatic package building (with GitHub Actions) for Atlas OS.
 
-references:
-awuctl
-whatever127
-the gamers against weed
-asdcorp
-may5062
-stolenbytes
-...various other anonymous catgirls
+Credit goes to [@echnobas](https://github.com/echnobas) for this project.
 
-# gullible installer
-microsoft "developers" are a little goofy sometimes
+### Changes
+- Removed [`gullible_installer.ps1`](https://github.com/echnobas/sxsc/blob/master/gullible_installer.ps1)
+  - Not needed for building
+  - [`online-sxs.cmd`](https://github.com/he3als/online-sxs) is used instead
+- Removed binaries
+  - They are included [by default](https://github.com/actions/runner-images/blob/main/images/win/Windows2022-Readme.md#installed-windows-sdks) in the `windows-latest` GitHub Action runner
+  - Changed in the Python script to match that
+  - Removed binaries:  `makecab, makecat, signtool`
 
-references:
-he3als
-may5062
-awuctl
+### References from original project
+Anomalous Software Deterioration Corporation, awuctl, whatever127, asdcorp, may5062, stolenbytes, other anonymous people
