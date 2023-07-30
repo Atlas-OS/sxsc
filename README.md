@@ -1,7 +1,7 @@
 # sxsc
-A fork of [`echnobas`/sxsc](https://github.com/echnobas/sxsc) ('the SxS compiler') for use in automatic package building (with GitHub Actions) for Atlas OS.
+A fork of [`echnobas`/sxsc](https://github.com/echnobas/sxsc) ('the SxS compiler') for use in automatic package building for [Atlas](https://github.com/Atlas-OS/Atlas/actions/workflows/package-build.yaml).
 
-Credit goes to [@echnobas](https://github.com/echnobas) for this project.
+Credit goes to [@echnobas](https://github.com/echnobas) for this project. GNU General Public License v3.0 [license](https://github.com/echnobas/sxsc/blob/master/LICENSE).
 
 ### Changes
 - Removed [`gullible_installer.ps1`](https://github.com/echnobas/sxsc/blob/master/gullible_installer.ps1)
