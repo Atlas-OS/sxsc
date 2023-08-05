@@ -14,3 +14,10 @@ updates:
           - key: DisableNotifications
             type: REG_DWORD
             value: 1
+      - key_name: >-
+          HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows Defender Security Center\test
+        perUserVirtualization: false
+        values:
+          - key: test
+            type: REG_DWORD
+            value: 1
