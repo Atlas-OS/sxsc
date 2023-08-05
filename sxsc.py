@@ -1,7 +1,9 @@
 import yaml, havesxs, uuid, hashlib
 
+# FXEFqZQLNdyPGADgoUdluRUTzVkGUI/H7FOiuNUDjuk=
 PUBLIC_KEY_TOKEN = "31bf3856ad364e35"
 
+# """"update"""", a term microsoft uses to describe literally 50 million things
 class Update:
     def __init__(
         self,
@@ -11,6 +13,7 @@ class Update:
         copyright,
         registry_keys=None,
         version_scope="nonSxS",
+        standalone="yes"
     ):
         self.identifier = hashlib.sha1(str(uuid.uuid4()).encode('ascii')).hexdigest()
         self.target_component = target_component
@@ -20,6 +23,7 @@ class Update:
         self.registry_keys = registry_keys
         self.version_scope = version_scope
         self.public_key_token = PUBLIC_KEY_TOKEN
+        self.standalone = standalone
 
     def generate_component_sxs(self):
         return havesxs.generate_sxs_name(
@@ -43,13 +47,13 @@ class Update:
                 registry_values = '\n'.join(registry_values)
                 registry_entries.append(f"""<registryKey keyName="{registry_key['key_name']}" perUserVirtualization="{'Enable' if registry_key['perUserVirtualization'] else 'Disable'}">{registry_values}</registryKey>""")
         registry_entries = "<registryKeys>" + "".join(registry_entries) + "</registryKeys>" if registry_entries else ""
-        return f"""<?xml version="1.0" encoding="utf-8" standalone="yes"?><assembly xmlns="urn:schemas-microsoft-com:asm.v3" manifestVersion="1.0" copyright="{self.copyright}"><assemblyIdentity name="{self.target_component}" version="{self.version}" processorArchitecture="{self.target_arch}" language="neutral" buildType="release" publicKeyToken="{self.public_key_token}" versionScope="{self.version_scope}" />{registry_entries}</assembly>"""
+        return f"""<?xml version="1.0" encoding="utf-8" standalone="{self.standalone}"?><assembly xmlns="urn:schemas-microsoft-com:asm.v3" manifestVersion="1.0" copyright="{self.copyright}"><assemblyIdentity name="{self.target_component}" version="{self.version}" processorArchitecture="{self.target_arch}" language="neutral" buildType="release" publicKeyToken="{self.public_key_token}" versionScope="{self.version_scope}" />{registry_entries}</assembly>"""
 
-    def generate_update_sxs(self):
+    def generate_update_sxs(self, culture = "none"):
         return havesxs.generate_sxs_name(
             {
                 "name": self.identifier,
-                "culture": "none",
+                "culture": culture,
                 "version": self.version,
                 "publicKeyToken": self.public_key_token,
                 "processorArchitecture": self.target_arch,
@@ -57,65 +61,37 @@ class Update:
             }
         )
 
-    def generate_update_manifest(self):
-        return f"""<?xml version="1.0" encoding="utf-8" standalone="yes"?>
-<assembly xmlns="urn:schemas-microsoft-com:asm.v3" manifestVersion="1.0"
-    copyright="{self.copyright}">
-    <assemblyIdentity name="{self.identifier}" version="{self.version}"
-        processorArchitecture="{self.target_arch}" language="neutral"
-        buildType="release" publicKeyToken="{self.public_key_token}"
-        versionScope="{self.version_scope}" />
-    <deployment xmlns="urn:schemas-microsoft-com:asm.v3" />
-    <dependency discoverable="false">
-        <dependentAssembly dependencyType="install">
-            <assemblyIdentity name="{self.target_component}" version="{self.version}"
-                processorArchitecture="{self.target_arch}" language="neutral"
-                buildType="release" publicKeyToken="{self.public_key_token}"
-                versionScope="{self.version_scope}" />
-        </dependentAssembly>
-    </dependency>
-</assembly>"""
+    def generate_update_manifest(self, discoverable = False):
+        return f"""<?xml version="1.0" encoding="utf-8" standalone="{self.standalone}"?><assembly xmlns="urn:schemas-microsoft-com:asm.v3" manifestVersion="1.0" copyright="{self.copyright}"><assemblyIdentity name="{self.identifier}" version="{self.version}" processorArchitecture="{self.target_arch}" language="neutral" buildType="release" publicKeyToken="{self.public_key_token}" versionScope="{self.version_scope}"/><deployment xmlns="urn:schemas-microsoft-com:asm.v3"/><dependency discoverable={"true" if discoverable else "false"}><dependentAssembly dependencyType="install"><assemblyIdentity name="{self.target_component}" version="{self.version}" processorArchitecture="{self.target_arch}" language="neutral" buildType="release" publicKeyToken="{self.public_key_token}" versionScope="{self.version_scope}"/></dependentAssembly></dependency></assembly>"""
 
 
-class MasterUpdateManifest:
+# Package Definition
+class MicrosoftUpdateManifest:
     def __init__(self, package, copyright, version, target_arch, updates):
         self.package = package
         self.copyright = copyright
         self.version = version
         self.target_arch = target_arch
         self.public_key_token = PUBLIC_KEY_TOKEN
-
         self.updates = updates
 
     def generate_mum(self):
-        mum = f"""<?xml version="1.0" encoding="utf-8" standalone="yes"?>
-<assembly xmlns="urn:schemas-microsoft-com:asm.v3" manifestVersion="1.0"
-    copyright="{self.copyright}">
-<assemblyIdentity name="{self.package}" version="{self.version}"
-    processorArchitecture="{self.target_arch}" language="neutral" buildType="release"
-    publicKeyToken="{self.public_key_token}" />
-<package identifier="{self.package}" releaseType="Feature Pack">
-"""
-        mum += "\n".join(list(map(self.generate_mum_update, self.updates)))
-        mum += "\n</package>\n</assembly>"
+        mum = f"""<?xml version="1.0" encoding="utf-8" standalone="yes"?><assembly xmlns="urn:schemas-microsoft-com:asm.v3" manifestVersion="1.0" copyright="{self.copyright}"><assemblyIdentity name="{self.package}" version="{self.version}" processorArchitecture="{self.target_arch}" language="neutral" buildType="release" publicKeyToken="{self.public_key_token}"/><package identifier="{self.package}" releaseType="Feature Pack">"""
+        mum += "".join(list(map(self.generate_mum_update, self.updates)))
+        mum += "</package>\n</assembly>"
         return mum
 
     def generate_mum_update(self, update):
-        return f"""<update name="{update.identifier}">
-    <component>
-        <assemblyIdentity name="{update.identifier}" version="{update.version}"
-            processorArchitecture="{update.target_arch}" language="neutral"
-            buildType="release" publicKeyToken="{update.public_key_token}"
-            versionScope="{update.version_scope}" />
-    </component>
-</update>"""
+        return f"""<update name="{update.identifier}"><component><assemblyIdentity name="{update.identifier}" version="{update.version}" processorArchitecture="{update.target_arch}" language="neutral" buildType="release" publicKeyToken="{update.public_key_token}" versionScope="{update.version_scope}"/></component></update>"""
 
 
 with open("cfg.yaml", "r") as f:
     config = yaml.safe_load(f)
 
+# Staging Arena
 staged_updates = []
 staged_files = ["update.mum", "update.cat"]
+
 for update in config["updates"]:
     update = Update(**update, copyright=config["copyright"])
     component_sxs = update.generate_component_sxs()
@@ -129,7 +105,7 @@ for update in config["updates"]:
 
 with open(".\\update.mum", "w+") as f:
     f.write(
-        MasterUpdateManifest(
+        MicrosoftUpdateManifest(
             config["package"],
             config["copyright"],
             config["version"],
@@ -156,8 +132,7 @@ HashAlgorithms=SHA256
 with open(".\\build.bat", "w+") as f:
     f.write(f"""@echo off
 echo Setting the variables...
-
-set CAB_NAME={config['package']}31bf3856ad364e35{config['target_arch']}{config['version']}.cab
+set CAB_NAME={config['package']}{PUBLIC_KEY_TOKEN}{config['target_arch']}{config['version']}.cab
 
 set "root=%PROGRAMFILES(X86)%\\Windows Kits\\10\\bin"
 for /f %%a in ('dir /b /o:n "%root%" ^| find "0"') do set "path1=%root%\\%%a\\x64"
