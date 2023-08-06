@@ -155,13 +155,23 @@ HashAlgorithms=SHA256
 
 with open(".\\build.bat", "w+") as f:
     f.write(f"""@echo off
+echo Setting the variables...
+
 set CAB_NAME={config['package']}31bf3856ad364e35{config['target_arch']}{config['version']}.cab
 
-del /f update.cat 2>NUL
-del /f *.cab 2>NUL
-bin\makecat update.cdf || exit /b 1
-bin\signtool.exe sign /f sxs.pfx /p 1 /fd SHA256 update.cat || exit /b 1
-bin\makecab /d "CabinetName1=%CAB_NAME%" /f files.txt || exit /b 1
-del /f setup.* 2>NUL
-bin\signtool.exe sign /f sxs.pfx /p 1 /fd SHA256 disk1\%CAB_NAME% || exit /b 1
-copy disk1\*.cab . >NUL""")
+set "root=%PROGRAMFILES(X86)%\\Windows Kits\\10\\bin"
+for /f %%a in ('dir /b /o:n "%root%" ^| find "0"') do set "path1=%root%\\%%a\\x64"
+set "PATH=%PATH%;%path1%"
+
+echo Making CAT...
+makecat update.cdf > nul || exit /b 1
+echo Signing CAT...
+signtool.exe sign /f sxs.pfx /p 1 /fd SHA256 update.cat  > nul || exit /b 1
+
+echo Making CAB...
+makecab /d "CabinetName1=%CAB_NAME%" /f files.txt > nul || exit /b 1
+del /f setup.* > nul 2>&1
+echo Signing CAB...
+signtool sign /f sxs.pfx /p 1 /fd SHA256 disk1\\%CAB_NAME% > nul || exit /b 1
+
+copy disk1\\*.cab . > nul""")
