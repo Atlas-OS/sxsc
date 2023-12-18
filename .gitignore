@@ -1,2 +1,7 @@
 .vscode/
 __pycache__/
+*.bat
+*.cmd
+*.cab
+*.yaml
+*.yml
