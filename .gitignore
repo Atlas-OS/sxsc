@@ -2,7 +2,10 @@
 __pycache__/
 *.bat
 *.cmd
-*.cab
 *.yaml
 *.yml
 *.exe
+*.manifest
+*.mum
+*.cat
+*.cab
