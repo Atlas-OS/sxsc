@@ -41,6 +41,8 @@ class Update:
         )
 
     def generate_component_manifest(self):
+        global tempDir
+
         registry_entries = []
         if self.registry_keys:
             for registry_key in self.registry_keys:
@@ -55,8 +57,7 @@ class Update:
         if self.files:
             for file in self.files:
                 if file.get('operation') == 'delete':
-                    if 'tempDir' not in locals():
-                        global tempDir
+                    if tempDir == None:
                         tempDir = tempfile.mkdtemp()
                     
                     deletedFile = os.path.join(tempDir, file['file'])
