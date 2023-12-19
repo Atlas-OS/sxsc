@@ -72,7 +72,7 @@ class Update:
                     with open(filePath, 'rb') as f:
                         dsig = base64.b64encode(hashlib.sha256(f.read()).digest()).decode()
 
-                    files_entries.append(f"""<file name="{filePath}" destinationPath="{file['destination']}" importPath="$(build.nttree)\\"><asmv2:hash xmlns:asmv2="urn:schemas-microsoft-com:asm.v2" xmlns:dsig="http://www.w3.org/2000/09/xmldsig#"><dsig:Transforms><dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" /></dsig:Transforms><dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256" /><dsig:DigestValue>{dsig}</dsig:DigestValue></asmv2:hash></file>""")
+                    files_entries.append(f"""<file name="{os.path.basename(filePath)}" destinationPath="{file['destination']}" importPath="$(build.nttree)\\"><asmv2:hash xmlns:asmv2="urn:schemas-microsoft-com:asm.v2" xmlns:dsig="http://www.w3.org/2000/09/xmldsig#"><dsig:Transforms><dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" /></dsig:Transforms><dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256" /><dsig:DigestValue>{dsig}</dsig:DigestValue></asmv2:hash></file>""")
                     files_list.append(filePath)
                 except FileNotFoundError:
                     print(f"{file['file']} specified not found.")
