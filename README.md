@@ -12,3 +12,4 @@ GNU General Public License v3.0 [license](https://github.com/echnobas/sxsc/blob/
   - Changed in the Python script to match that
   - Removed binaries:  `makecab, makecat, signtool`
 - Add `requirements.txt`
+- Files support

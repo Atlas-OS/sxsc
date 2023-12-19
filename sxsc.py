@@ -1,7 +1,8 @@
-import yaml, havesxs, uuid, hashlib
+import yaml, havesxs, uuid, hashlib, base64, os, tempfile
 
 # FXEFqZQLNdyPGADgoUdluRUTzVkGUI/H7FOiuNUDjuk=
 PUBLIC_KEY_TOKEN = "31bf3856ad364e35"
+tempDir = None
 
 # """"update"""", a term microsoft uses to describe literally 50 million things
 class Update:
@@ -12,6 +13,7 @@ class Update:
         version,
         copyright,
         registry_keys=None,
+        files=None,
         version_scope="nonSxS",
         standalone="yes"
     ):
@@ -21,6 +23,7 @@ class Update:
         self.version = version
         self.copyright = copyright
         self.registry_keys = registry_keys
+        self.files = files
         self.version_scope = version_scope
         self.public_key_token = PUBLIC_KEY_TOKEN
         self.standalone = standalone
@@ -46,8 +49,39 @@ class Update:
                     registry_values.append(f"""<registryValue name="{registry_value['key']}" valueType="{registry_value['type']}" value="{registry_value['value']}" />""")
                 registry_values = '\n'.join(registry_values)
                 registry_entries.append(f"""<registryKey keyName="{registry_key['key_name']}" perUserVirtualization="{'Enable' if registry_key['perUserVirtualization'] else 'Disable'}">{registry_values}</registryKey>""")
+
+        files_list = []
+        files_entries = []
+        if self.files:
+            for file in self.files:
+                if file.get('operation') == 'delete':
+                    if 'tempDir' not in locals():
+                        global tempDir
+                        tempDir = tempfile.mkdtemp()
+                    
+                    deletedFile = os.path.join(tempDir, file['file'])
+                    with open(deletedFile, 'wb') as f:
+                        f.write(b'\x01')  # write a 1 bit, needed for makecat
+                    
+                    filePath = deletedFile
+                else:
+                    filePath = file['file']
+
+                try: 
+                    with open(filePath, 'rb') as f:
+                        dsig = base64.b64encode(hashlib.sha256(f.read()).digest()).decode()
+
+                    files_entries.append(f"""<file name="{filePath}" destinationPath="{file['destination']}" importPath="$(build.nttree)\\"><asmv2:hash xmlns:asmv2="urn:schemas-microsoft-com:asm.v2" xmlns:dsig="http://www.w3.org/2000/09/xmldsig#"><dsig:Transforms><dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" /></dsig:Transforms><dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256" /><dsig:DigestValue>{dsig}</dsig:DigestValue></asmv2:hash></file>""")
+                    files_list.append(filePath)
+                except FileNotFoundError:
+                    print(f"{file['file']} specified not found.")
+
         registry_entries = "<registryKeys>" + "".join(registry_entries) + "</registryKeys>" if registry_entries else ""
-        return f"""<?xml version="1.0" encoding="utf-8" standalone="{self.standalone}"?><assembly xmlns="urn:schemas-microsoft-com:asm.v3" manifestVersion="1.0" copyright="{self.copyright}"><assemblyIdentity name="{self.target_component}" version="{self.version}" processorArchitecture="{self.target_arch}" language="neutral" buildType="release" publicKeyToken="{self.public_key_token}" versionScope="{self.version_scope}" />{registry_entries}</assembly>"""
+        files_entries = "".join(files_entries) if files_entries else ""
+        return [
+            f"""<?xml version="1.0" encoding="utf-8" standalone="{self.standalone}"?><assembly xmlns="urn:schemas-microsoft-com:asm.v3" manifestVersion="1.0" copyright="{self.copyright}"><assemblyIdentity name="{self.target_component}" version="{self.version}" processorArchitecture="{self.target_arch}" language="neutral" buildType="release" publicKeyToken="{self.public_key_token}" versionScope="{self.version_scope}" />{registry_entries}{files_entries}</assembly>""",
+            files_list
+        ]
 
     def generate_update_sxs(self, culture = "none"):
         return havesxs.generate_sxs_name(
@@ -90,18 +124,32 @@ with open("cfg.yaml", "r") as f:
 
 # Staging Arena
 staged_updates = []
+staged_ddf = ["update.mum", "update.cat"]
 staged_files = ["update.mum", "update.cat"]
 
 for update in config["updates"] or []:
     update = Update(**update, copyright=config["copyright"])
     component_sxs = update.generate_component_sxs()
     update_sxs = update.generate_update_sxs()
+    files = [f"{component_sxs}.manifest", f"{update_sxs}.manifest"] 
+
     with open(f".\\{component_sxs}.manifest", "w+") as f:
-        f.write(update.generate_component_manifest())
+        component_manifest = update.generate_component_manifest()
+
+        if component_manifest[1] != []:
+            for file in component_manifest[1]:
+                staged_ddf.append(f".Set DestinationDir={component_sxs}")
+                staged_ddf.append(file)
+                staged_files.append(file)
+
+            staged_ddf.append(f".Set DestinationDir=")
+        
+        f.write(component_manifest[0])
     with open(f".\\{update_sxs}.manifest", "w+") as f:
         f.write(update.generate_update_manifest())
     staged_updates.append(update)
-    staged_files.extend([f"{component_sxs}.manifest", f"{update_sxs}.manifest"])
+    staged_ddf.extend(files)
+    staged_files.extend(files)
 
 with open(".\\update.mum", "w+") as f:
     f.write(
@@ -115,7 +163,7 @@ with open(".\\update.mum", "w+") as f:
     )
 
 with open(".\\files.txt", "w+") as f:
-    f.write("\n".join(staged_files))
+    f.write("\n".join(staged_ddf))
 
 with open(".\\update.cdf", "w+") as f:
     f.write("""[CatalogHeader]
@@ -133,7 +181,6 @@ with open(".\\build.bat", "w+") as f:
     f.write(f"""@echo off
 echo Setting the variables...
 set CAB_NAME={config['package']}{PUBLIC_KEY_TOKEN}{config['target_arch']}{config['version']}.cab
-
 set "root=%PROGRAMFILES(X86)%\\Windows Kits\\10\\bin"
 for /f %%a in ('dir /b /o:n "%root%" ^| find "0"') do set "path1=%root%\\%%a\\x64"
 set "PATH=%PATH%;%path1%"
@@ -149,4 +196,12 @@ del /f setup.* > nul 2>&1
 echo Signing CAB...
 signtool sign /f sxs.pfx /p 1 /fd SHA256 disk1\\%CAB_NAME% > nul || exit /b 1
 
+echo Copying CAB to main directory...
 copy disk1\\*.cab . > nul""")
+
+if not tempDir == None:
+    with open(".\\build.bat", 'a') as f:
+        f.write(f"""\n
+echo Deleting temp folder...
+rmdir /s /q "{tempDir}" > nul
+""")
