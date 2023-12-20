@@ -56,13 +56,18 @@ class Update:
         files_entries = []
         if self.files:
             for file in self.files:
-                if file.get('operation') == 'delete':
+                if file.get('operation') == 'replace':
                     if tempDir == None:
                         tempDir = tempfile.mkdtemp()
                     
+                    if file.get('text'):
+                        text = file['text'].encode('utf-8')  # encode string to bytes using utf-8
+                    else:
+                        text = b'\x01'  # write 1 bit, needed for makecat to hash it
+
                     deletedFile = os.path.join(tempDir, file['file'])
                     with open(deletedFile, 'wb') as f:
-                        f.write(b'\x01')  # write a 1 bit, needed for makecat
+                        f.write(text)
                     
                     filePath = deletedFile
                 else:
