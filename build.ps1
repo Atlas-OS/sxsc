@@ -9,7 +9,7 @@ $winKit = Get-ChildItem -Path "$([Environment]::GetFolderPath('ProgramFilesx86')
     Sort-Object -Descending |
     Select-Object -First 1
 if (($winKit.Count -eq 0) -and !$bin) { throw "Windows Kit not found!" }
-$env:PATH += ";$winKit"
+$env:PATH += ";$winKit\x64"
 if ($bin) { $env:path += ";$PWD\bin" }
 
 Write-Output "Making CAT..."
