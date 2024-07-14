@@ -183,31 +183,17 @@ HashAlgorithms=SHA256
     for (i, filename) in enumerate(filter(lambda f: f != "update.cat", staged_files)):
         f.write(f"<HASH>F{i+1}={filename}\n")
 
-with open(".\\build.bat", "w+") as f:
-    f.write(f"""@echo off
-echo Setting the variables...
-set CAB_NAME={config['package']}{PUBLIC_KEY_TOKEN}{config['target_arch']}{config['version']}.cab
-set "root=%PROGRAMFILES(X86)%\\Windows Kits\\10\\bin"
-for /f %%a in ('dir /b /o:n "%root%" ^| find "0"') do set "path1=%root%\\%%a\\x64"
-set "PATH=%PATH%;%path1%"
+with open(".\\start-build.ps1", "w+") as f:
+    f.write(f"""param (
+	[Parameter( Mandatory = $True )]
+	[string]$Thumbprint
+)
 
-echo Making CAT...
-makecat update.cdf > nul || exit /b 1
-echo Signing CAT...
-signtool.exe sign /f sxs.pfx /p 1 /fd SHA256 update.cat  > nul || exit /b 1
-
-echo Making CAB...
-makecab /d "CabinetName1=%CAB_NAME%" /f files.txt > nul || exit /b 1
-del /f setup.* > nul 2>&1
-echo Signing CAB...
-signtool sign /f sxs.pfx /p 1 /fd SHA256 disk1\\%CAB_NAME% > nul || exit /b 1
-
-echo Copying CAB to main directory...
-copy disk1\\*.cab . > nul""")
+.\\build.ps1 -Thumbprint $Thumbprint -CabName '{config['package']}{PUBLIC_KEY_TOKEN}{config['target_arch']}{config['version']}.cab'""")
 
 if not tempDir == None:
-    with open(".\\build.bat", 'a') as f:
+    with open(".\\start-build.ps1", 'a') as f:
         f.write(f"""\n
-echo Deleting temp folder...
-rmdir /s /q "{tempDir}" > nul
+Write-Output "Deleting temp folder..."
+Remove-Item -Path '{tempDir}' -Force -Recurse
 """)
